@@ -2,9 +2,9 @@ import mysql from 'mysql';
 
 // MySQL Config
 var con = mysql.createConnection({ 
-    user: "phat",
-    password: "Anhemtoibanxoi12", //and even better use the .env file or read it from a file not on source control ;)
-    database: "asm2"
+    user: "DB user here",
+    password: "password for the user", 
+    database: "database name"
 });
 
 // Connect to MySQL

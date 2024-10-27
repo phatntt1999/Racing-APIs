@@ -24,7 +24,17 @@ node -v
 npm -v 
 ```
 
-Run server:
+## Installing Express
+
+```bash
+npm init
+```
+
+Install Express using the following command
+```bash
+npm install express
+```
+## Run server:
 
 ```bash
 node index.js

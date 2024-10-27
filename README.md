@@ -39,3 +39,17 @@ npm install express
 ```bash
 node index.js
 ```
+
+You might got this error:
+"Client does not support authentication protocol requested by server; consider upgrading MySQL client"
+Try to update mysql using this command:
+```bash
+npm install mysql --save
+```
+
+Or in mysql change user's password into 'mysql_native_password'
+```bash
+ALTER USER 'your-username'@'localhost' IDENTIFIED WITH mysql_native_password BY 'your-password';
+
+FLUSH PRIVILEGES;
+```

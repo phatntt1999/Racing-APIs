@@ -4,6 +4,7 @@ import express from 'express';
 import driversRouter from './drivers.js';
 
 const app = express();
+
 const PORT = 3389;
 
 //enable CORS (this lets us make requests from any origin, including localhost)

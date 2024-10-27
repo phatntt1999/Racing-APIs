@@ -15,8 +15,21 @@ const getDrivers = (req, res) =>
             return;
         }
         
-        // Return the rows as a JSON object
-        res.json(rows);
+        const formattedDrivers = rows.map(driver => ({
+            name: driver.name,
+            number: driver.driver_number,
+            shortName: driver.short_name,
+            skill: {
+                street: driver.skill_street,
+                race: driver.skill_race
+            }
+        }));
+
+        // Send the response in the correct format
+        res.json({
+            code: 200,
+            result: formattedDrivers
+        });
     });
 }
 

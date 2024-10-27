@@ -1,0 +1,16 @@
+# These two lines enable "CORS" (see lectures)
+# This is necessary for requests from other servers to work
+# Note that * allows any server to access the API. This is not secure, and would 
+#   replaced with trusted server locations in a production environment
+Header add Access-Control-Allow-Origin "*"
+Header add Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+
+# This line enables the rewrite engine
+RewriteEngine on 
+
+# These lines allow the API to be accessed without the index.php in the URL
+# The first line allows us to access the API with a URL like /movie/1
+#   and will pass the 1 as a parameter to index.php
+# The second line allows us to access the API with a URL like /movie
+RewriteRule ^movie/([0-9]+)/?       index.php?id=$1    [QSA]
+RewriteRule ^movie                  index.php          [QSA]

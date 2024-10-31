@@ -6,6 +6,7 @@ import fs from 'fs';
 // This line imports the exported router, and names it movieRouter for this file
 // Add this line to the top of index.js after importing express
 import driversRouter from './drivers.js';
+import carsRouter from './cars.js';
 
 const app = express();
 
@@ -34,3 +35,5 @@ https.createServer(options, app).listen(PORT, () => {
 // This line tells Express to use the movie router for all routes beginning with "/movies"
 // Add this line to the end of index.js
 app.use("/driver", driversRouter);
+app.use("/car", carsRouter);
+

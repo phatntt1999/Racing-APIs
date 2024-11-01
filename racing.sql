@@ -17,7 +17,7 @@ VALUES
 
 CREATE TABLE cars (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    driver_id INT UNIQUE,
+    driver_id INT,
     suitability_race INT NOT NULL,
     suitability_street INT NOT NULL,
     reliability INT NOT NULL,

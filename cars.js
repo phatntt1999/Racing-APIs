@@ -106,6 +106,150 @@ const getCar = (req, res) => {
     });
 };
 
+const createCar = (req, res) => {
+    const { driver_id, suitability, reliability } = req.body;
+    const { race, street } = suitability;
+
+    // Validation
+    const isExistParam = isExistParams(race, street, reliability);
+    if (!isExistParam.valid) {
+        return res.status(400).json({
+            code: 400,
+            result: isExistParam.message
+        });
+    }
+
+    const suitabilityValidation = validateSuitability(race, street);
+
+    if (!suitabilityValidation.valid) {
+        console.log(suitabilityValidation.message)
+
+        return res.status(400).json({
+            code: 400,
+            result: suitabilityValidation.message
+        });
+    }
+
+    // Validate reliability is between 0 and 100
+    if (reliability < 0 || reliability > 100) {
+        return res.status(400).json({
+            code: 400,
+            result: 'Reliability must be between 0 and 100'
+        });
+    }
+
+    const query = `
+        INSERT INTO cars (driver_id, suitability_race, suitability_street, reliability)
+        VALUES (?, ?, ?, ?)
+    `;
+
+    // Insert the new car into the database
+    dbconn.query(query, [driver_id || null, race, street, reliability], (err, result) => {
+        if (err) {
+            return res.status(500).json({
+                code: 500,
+                result: 'Server error',
+            });
+        }
+
+        res.status(200).json({
+            code: 200,
+            result: 'Car created',
+        });
+    });
+};
+
+const updateCar = (req, res) => {
+    const carId = req.params.id; // Get the car ID from the URL parameter
+    const { suitability, reliability } = req.body;
+    const { race, street } = suitability;
+
+    // Validation
+    const isExistParam = isExistParams(race, street, reliability);
+    if (!isExistParam.valid) {
+        return res.status(400).json({
+            code: 400,
+            result: isExistParam.message
+        });
+    }
+
+    const suitabilityValidation = validateSuitability(race, street);
+    if (!suitabilityValidation.valid) {
+        console.log(suitabilityValidation.message)
+
+        return res.status(400).json({
+            code: 400,
+            result: suitabilityValidation.message
+        });
+    }
+
+    // Validate reliability is between 0 and 100
+    if (reliability < 0 || reliability > 100) {
+        return res.status(400).json({
+            code: 400,
+            result: 'Reliability must be between 0 and 100'
+        });
+    }
+
+    const query = `
+        UPDATE cars 
+        SET suitability_race = ?, suitability_street = ?, reliability = ? 
+        WHERE id = ?
+    `;
+
+    dbconn.query(query, [race, street, reliability, carId], (err, result) => {
+        if (err) {
+            return res.status(500).json({
+                code: 500,
+                result: 'Server error',
+            });
+        }
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({
+                code: 404,
+                result: 'Car not found'
+            });
+        }
+
+        res.status(200).json({
+            code: 200,
+            result: 'Car updated'
+        });
+    });
+};
+
+const deleteCar = (req, res) => {
+    const carId = req.params.id; // Get the car ID from the URL parameter
+
+    // SQL query to delete the car with the specified ID
+    const query = `DELETE FROM cars WHERE id = ?`;
+
+    dbconn.query(query, [carId], (err, result) => {
+        if (err) {
+            console.log(err)
+            return res.status(500).json({
+                code: 500,
+                result: 'Server error',
+            });
+        }
+
+        // If no rows were affected, the car ID does not exist
+        if (result.affectedRows === 0) {
+            return res.status(404).json({
+                code: 404,
+                result: 'Car not found'
+            });
+        }
+
+        // Success response
+        res.status(200).json({
+            code: 200,
+            result: 'Car deleted successfully'
+        });
+    });
+};
+
 const getCarDriver = (req, res) => {
     const carId = req.params.id; // Extract car ID from URL parameter
 
@@ -163,72 +307,133 @@ const getCarDriver = (req, res) => {
     });
 };
 
-const deleteCar = (req, res) => {
-    const carId = req.params.id; // Get the car ID from the URL parameter
+const updateCarDriver = (req, res) => {
+    const carId = req.params.id;
+    const { number: driver_number } = req.body;
 
-    // SQL query to delete the car with the specified ID
-    const query = `DELETE FROM cars WHERE id = ?`;
+    // Validate that driver_number is provided
+    if (!driver_number) {
+        return res.status(400).json({
+            code: 400,
+            result: 'driver_number is required'
+        });
+    }
+
+    const getDriverQuery = `
+        SELECT id FROM drivers WHERE number = ?
+    `;
+
+    dbconn.query(getDriverQuery, [driver_number], (err, rows) => {
+        if (err) {
+            return res.status(500).json({
+                code: 500,
+                result: 'Server error while fetching driver'
+            });
+        }
+
+        if (rows.length === 0) {
+            return res.status(404).json({
+                code: 404,
+                result: 'Driver not found'
+            });
+        }
+
+        const driverId = rows[0].id;
+
+        const updateCarQuery = `
+            UPDATE cars 
+            SET driver_id = ? 
+            WHERE id = ?
+        `;
+
+        dbconn.query(updateCarQuery, [driverId, carId], (err, result) => {
+            if (err) {
+                console.log(err)
+                return res.status(500).json({
+                    code: 500,
+                    result: 'Server error while updating car driver',
+                });
+            }
+
+            // If no rows were affected, the car ID does not exist
+            if (result.affectedRows === 0) {
+                return res.status(404).json({
+                    code: 404,
+                    result: 'Car not found'
+                });
+            }
+
+            // Success response
+            res.status(200).json({
+                code: 200,
+                result: 'Car driver updated'
+            });
+        });
+    });
+};
+
+const deleteCarDriver = (req, res) => {
+    const carId = req.params.id;
+
+    const query = `
+        UPDATE cars 
+        SET driver_id = NULL 
+        WHERE id = ?
+    `;
 
     dbconn.query(query, [carId], (err, result) => {
         if (err) {
             return res.status(500).json({
                 code: 500,
-                result: 'Server error',
+                result: 'Server error while deleting car driver'
             });
         }
 
-        // If no rows were affected, the car ID does not exist
+        // If no rows were affected, the car ID does not exist or driver is already NULL
         if (result.affectedRows === 0) {
             return res.status(404).json({
                 code: 404,
-                result: 'Car not found'
+                result: 'Car not found or no driver assigned to this car'
             });
         }
 
-        // Success response
         res.status(200).json({
             code: 200,
-            result: 'Car deleted successfully'
+            result: 'Driver removed from car successfully'
         });
     });
 };
 
 // Logic check validation
-const validateSkills = (skill_race, skill_street) => {
+const validateSuitability = (skill_race, skill_street) => {
     const raceSkill = parseInt(skill_race, 10);
     const streetSkill = parseInt(skill_street, 10);
 
     if (isNaN(raceSkill) || isNaN(streetSkill)) {
-        return { valid: false, result: 'skill_race and skill_street must be valid numbers' };
+        return { valid: false, message: 'Race and street of suitability must be valid numbers' };
     }
 
     // skill_race + skill_street equals 100
     if (raceSkill + streetSkill !== 100) {
-        return { valid: false, result: 'The sum of skill_race and skill_street must be 100' };
+        return { valid: false, message: 'The sum of Race and Street must be 100' };
     }
 
     return { valid: true, raceSkill, streetSkill };
 };
 
-const isExistParams = (name, number, shortName, race, street) => {
+const isExistParams = (race, street, reliability) => {
     let isValid = true;
-    let result = "";
+    let message = "";
 
-    if (!name) {
+    if (!race) {
         isValid = false;
-        message = "Name is required."
-    } else if (!shortName) {
-        isValid = false;
-        message = "Short Name is required."
-    } else if (!number) {
-        isValid = false;
-        message = "Number is required."
-    } else if (!race) {
-        isValid = false;
-        message = "Skill race is required."
+        message = "Race suitability is required."
     } else if (!street) {
         isValid = false;
-        message = "Skill street is required."
+        message = "Race suitability is required."
+    } else if (!reliability) {
+        isValid = false;
+        message = "Reliability is required."
     }
     
     return {
@@ -240,11 +445,13 @@ const isExistParams = (name, number, shortName, race, street) => {
 // Define a router for all the routes about Cars
 const router = express.Router();
 router.get('/', getCars);
-// router.post('/', createCar);
+router.post('/', createCar);
 router.get('/:id', getCar);
-router.get('/:id/driver', getCarDriver);
-// router.put('/:id', updateCar);
+router.put('/:id', updateCar);
 router.delete('/:id', deleteCar);
+router.get('/:id/driver', getCarDriver);
+router.put('/:id/driver', updateCarDriver);
+router.delete('/:id/driver', deleteCarDriver);
 
 // Make the router available to other modules via export/import
 export default router;

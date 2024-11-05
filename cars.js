@@ -55,7 +55,7 @@ const getCar = (req, res) => {
     // SQL query to retrieve the specific car with optional driver info
     const query = `
         SELECT cars.id AS car_id, cars.suitability_race, cars.suitability_street, cars.reliability,
-               drivers.id AS driver_id, drivers.name AS driver_name
+               drivers.id AS driver_id, drivers.name AS driver_name, drivers.number AS driver_number
         FROM cars
         LEFT JOIN drivers ON cars.driver_id = drivers.id
         WHERE cars.id = ?
@@ -83,7 +83,8 @@ const getCar = (req, res) => {
         const driver = car.driver_id
             ? {
                 name: car.driver_name,
-                uri: `https://lab-d00a6b41-7f81-4587-a3ab-fa25e5f6d9cf.australiaeast.cloudapp.azure.com:7101/driver/${car.driver_id}`
+                uri: `https://lab-d00a6b41-7f81-4587-a3ab-fa25e5f6d9cf.australiaeast.cloudapp.azure.com:7101/driver/${car.driver_number}`,
+                number: car.driver_number
             }
             : null;
 
@@ -404,6 +405,88 @@ const deleteCarDriver = (req, res) => {
     });
 };
 
+const getLapResult = async (req, res) => {
+    const carId = req.params.id;
+    const { trackType, baseLapTime } = req.query;
+
+    const carQuery = `
+        SELECT cars.reliability, cars.suitability_race, cars.suitability_street, drivers.skill_race, drivers.skill_street
+        FROM cars
+        LEFT JOIN drivers ON cars.driver_id = drivers.id
+        WHERE cars.id = ?
+    `;
+
+    dbconn.query(carQuery, [carId], (err, results) => {
+        if (err) {
+            console.log(err)
+            return res.status(500).json({
+                code: 500,
+                result: 'Query data error while fetching car data'
+            });
+        }
+
+        if (results.length === 0) {
+            return res.status(404).json({
+                code: 404,
+                result: 'Car not found'
+            });
+        }
+
+        const carData = results[0];
+        const { reliability, suitability_race, suitability_street, skill_race, skill_street } = carData;
+
+        const suitability = {
+            race: suitability_race,
+            street: suitability_street
+        };
+
+        const driverSkill = {
+            race: skill_race,
+            street: skill_street
+        };
+        console.log(trackType)
+
+        if (suitability[trackType] === undefined || driverSkill[trackType] === undefined) {
+            return res.status(400).json({
+                code: 400,
+                message: `Invalid track type or missing skill/suitability data for track type ${trackType}`
+            });
+        }
+
+        // Check if the car crashes
+        const crashPoint = trackType === 'street' ? reliability + 10 : reliability + 5;
+        const crashRandomFactor = Math.random() * crashPoint;
+
+        if (crashRandomFactor > reliability) {
+            return res.status(200).json({
+                code: 200,
+                result: {
+                    time: 0,
+                    randomness: crashRandomFactor,
+                    crashed: true
+                }
+            });
+        }
+
+        // Cal lap time if the car does not crash
+        const speed = (suitability[trackType] + driverSkill[trackType] + (100 - reliability)) / 3;
+        const lapTime = baseLapTime + (10 * (speed / 100));
+
+        // Add a randomness factor between 0 and 5 seconds
+        const randomness = Math.random() * 5;
+        const finalLapTime = lapTime + randomness;
+
+        return res.status(200).json({
+            code: 200,
+            result: {
+                time: finalLapTime,
+                randomness: randomness,
+                crashed: false
+            }
+        });
+    });
+};
+
 // Logic check validation
 const validateSuitability = (skill_race, skill_street) => {
     const raceSkill = parseInt(skill_race, 10);
@@ -452,6 +535,7 @@ router.delete('/:id', deleteCar);
 router.get('/:id/driver', getCarDriver);
 router.put('/:id/driver', updateCarDriver);
 router.delete('/:id/driver', deleteCarDriver);
+router.get('/:id/lap', getLapResult);
 
 // Make the router available to other modules via export/import
 export default router;

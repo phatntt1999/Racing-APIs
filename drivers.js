@@ -262,13 +262,24 @@ const isExistParams = (name, number, shortName, race, street) => {
     }
 };
 
+const checkApiKey = (req, res, next) => {
+    const apiKey = req.header('x-api-key');
+
+    // Check if API key is present and matches the stored key
+    if (!apiKey || apiKey !== process.env.API_KEY) {
+        return res.status(401).json({ code: 401, result: 'Unauthorized' });
+    }
+
+    next();
+};
+
 // Define a router for all the routes about Drivers
 const router = express.Router();
 router.get('/', getDrivers);
 router.get('/:id', getDriver);
-router.post('/', createDriver);
-router.put('/:id', updateDriver);
-router.delete('/:id', deleteDriver);
+router.post('/', checkApiKey, createDriver);
+router.put('/:id', checkApiKey, updateDriver);
+router.delete('/:id', checkApiKey, deleteDriver);
 
 // Make the router available to other modules via export/import
 export default router;

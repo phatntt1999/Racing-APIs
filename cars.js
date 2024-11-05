@@ -418,7 +418,6 @@ const getLapResult = async (req, res) => {
 
     dbconn.query(carQuery, [carId], (err, results) => {
         if (err) {
-            console.log(err)
             return res.status(500).json({
                 code: 500,
                 result: 'Query data error while fetching car data'
@@ -435,6 +434,14 @@ const getLapResult = async (req, res) => {
         const carData = results[0];
         const { reliability, suitability_race, suitability_street, skill_race, skill_street } = carData;
 
+        // Check if the driver data is null (meaning no driver is associated)
+        if (skill_race === null || skill_street === null) {
+            return res.status(418).json({
+                code: 418,
+                result: "I'm a teapot: Car has no driver"
+            });
+        }
+        
         const suitability = {
             race: suitability_race,
             street: suitability_street
@@ -444,7 +451,6 @@ const getLapResult = async (req, res) => {
             race: skill_race,
             street: skill_street
         };
-        console.log(trackType)
 
         if (suitability[trackType] === undefined || driverSkill[trackType] === undefined) {
             return res.status(400).json({
@@ -525,16 +531,27 @@ const isExistParams = (race, street, reliability) => {
     }
 };
 
+const checkApiKey = (req, res, next) => {
+    const apiKey = req.header('x-api-key');
+
+    // Check if API key is present and matches the stored key
+    if (!apiKey || apiKey !== process.env.API_KEY) {
+        return res.status(401).json({ code: 401, result: 'Unauthorized' });
+    }
+
+    next();
+};
+
 // Define a router for all the routes about Cars
 const router = express.Router();
 router.get('/', getCars);
-router.post('/', createCar);
+router.post('/', checkApiKey, createCar);
 router.get('/:id', getCar);
-router.put('/:id', updateCar);
-router.delete('/:id', deleteCar);
+router.put('/:id', checkApiKey, updateCar);
+router.delete('/:id', checkApiKey, deleteCar);
 router.get('/:id/driver', getCarDriver);
-router.put('/:id/driver', updateCarDriver);
-router.delete('/:id/driver', deleteCarDriver);
+router.put('/:id/driver', checkApiKey, updateCarDriver);
+router.delete('/:id/driver', checkApiKey, deleteCarDriver);
 router.get('/:id/lap', getLapResult);
 
 // Make the router available to other modules via export/import

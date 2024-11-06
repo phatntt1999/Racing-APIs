@@ -2,19 +2,23 @@ import express from 'express';
 import cors from 'cors';
 import https from 'https';
 import fs from 'fs';
+import dotenv from 'dotenv';
 
 // This line imports the exported router, and names it movieRouter for this file
 // Add this line to the top of index.js after importing express
 import driversRouter from './drivers.js';
+import carsRouter from './cars.js';
+
+dotenv.config();
 
 const app = express();
 
 const PORT = 3389;
 
 app.use(cors({
-    origin: 'https://utasbot.dev',
+    origin: '*',
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-API-KEY']
 }));
 
 // Load SSL certificate and key
@@ -34,3 +38,5 @@ https.createServer(options, app).listen(PORT, () => {
 // This line tells Express to use the movie router for all routes beginning with "/movies"
 // Add this line to the end of index.js
 app.use("/driver", driversRouter);
+app.use("/car", carsRouter);
+

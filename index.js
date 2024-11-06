@@ -16,9 +16,9 @@ const app = express();
 const PORT = 3389;
 
 app.use(cors({
-    origin: 'https://utasbot.dev',
+    origin: '*',
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-API-KEY']
 }));
 
 // Load SSL certificate and key
